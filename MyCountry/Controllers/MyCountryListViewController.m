@@ -25,15 +25,20 @@
     [self createControls];
     
     activityView = [[UIActivityIndicatorView alloc] initWithActivityIndicatorStyle:UIActivityIndicatorViewStyleGray];
-    [activityView setCenter:CGPointMake(self.view.frame.size.width /2, self.view.frame.size.height / 2)];
+    activityView.translatesAutoresizingMaskIntoConstraints = NO;
     [self.view addSubview:activityView];
     [activityView startAnimating];
     
     NSLayoutConstraint *Height = [NSLayoutConstraint constraintWithItem:activityView attribute:NSLayoutAttributeHeight relatedBy:NSLayoutRelationEqual toItem:nil attribute:NSLayoutAttributeHeight multiplier:1.0 constant:50];
-    
+
     NSLayoutConstraint *Width = [NSLayoutConstraint constraintWithItem:activityView attribute:NSLayoutAttributeWidth relatedBy:NSLayoutRelationEqual toItem:nil attribute:NSLayoutAttributeWidth multiplier:1.0 constant:50];
     
-    [self.view addConstraints:@[Width, Height]];
+    NSLayoutConstraint *centerX = [NSLayoutConstraint constraintWithItem:activityView attribute:NSLayoutAttributeCenterX relatedBy:NSLayoutRelationEqual toItem:self.view attribute:NSLayoutAttributeCenterX multiplier:1.0 constant:0];
+    
+     NSLayoutConstraint *centerY = [NSLayoutConstraint constraintWithItem:activityView attribute:NSLayoutAttributeCenterY relatedBy:NSLayoutRelationEqual toItem:self.view attribute:NSLayoutAttributeCenterY multiplier:1.0 constant:0];
+
+
+    [self.view addConstraints:@[Width, Height, centerX, centerY]];
     
     [self callWebService];
 }
@@ -48,6 +53,12 @@
 
 
 //MARK:local methods
+
+-(void)reloadTableView
+{
+    [activityView stopAnimating];
+    [tblMapList reloadData];
+}
 
 -(void)refreshData
 {
@@ -69,6 +80,7 @@
     
     refreshControl = [[UIRefreshControl alloc] init];
     [refreshControl addTarget:self action:@selector(refreshData) forControlEvents:UIControlEventValueChanged];
+    refreshControl.translatesAutoresizingMaskIntoConstraints = NO;
     [tblMapList addSubview:refreshControl];
    
     
@@ -108,12 +120,10 @@
             
                     arrList = [[NSMutableArray alloc]init];
                     arrList = [dicResult objectForKey:@"rows"];
-                    self.navigationItem.title = [dicResult objectForKey:@"title"];
             
-                    dispatch_async(dispatch_get_main_queue(), ^{
-                        
-                         [activityView stopAnimating];
-                        [tblMapList reloadData];
+                    dispatch_async(dispatch_get_main_queue(),  ^(void) {
+                         self.navigationItem.title = [dicResult objectForKey:@"title"];
+                        [self reloadTableView];
                     });
            
         }
@@ -144,9 +154,15 @@
         
         totalHeight = ceil(title_size.height);
     } else {
-        title_size = [text sizeWithFont:font
-                      constrainedToSize:constraint
-                          lineBreakMode:NSLineBreakByWordWrapping];
+//        title_size = [text sizeWithFont:font
+//                      constrainedToSize:constraint
+//                          lineBreakMode:NSLineBreakByWordWrapping];
+        
+        title_size = [text boundingRectWithSize:constraint
+                                        options:NSStringDrawingUsesLineFragmentOrigin
+                                     attributes:@{ NSFontAttributeName : font }
+                                        context:nil].size;
+        
         totalHeight = title_size.height ;
     }
     
